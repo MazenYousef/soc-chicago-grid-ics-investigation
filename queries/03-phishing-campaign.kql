@@ -1,0 +1,23 @@
+// Phase 3 - The phishing campaign behind the download
+
+// How did the link reach the SCADA operator?
+Email
+| where recipient == "jibby_saetang@chicagopowergrid.com"
+| where link contains "Urgent_Cyber_Threat_Alert"
+| project timestamp, sender, subject, link
+// -> 2024-08-29 05:00:45 from joseph_eisenman@chicagopowergrid.com (an INTERNAL account)
+//    subject "Critical: Grid Security Update Required"
+
+// The wider campaign: all "Critical:" lures by sender
+Email
+| where subject contains "Critical:"
+| summarize count() by sender
+| order by count_ desc
+
+// Who received them?  -> 12 employees
+let phishing_target_email = Email
+| where subject contains "Critical:"
+| distinct recipient;
+Employees
+| where email_addr in (phishing_target_email)
+| distinct name, role

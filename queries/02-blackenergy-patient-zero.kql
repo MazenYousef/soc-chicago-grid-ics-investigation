@@ -1,0 +1,33 @@
+// Phase 2 - Hunt the implant by prevalence and trace it to its delivery
+
+// How widespread is BlackEnergy, and when did it first run?  -> 1 host, 2024-08-29 08:28:45
+ProcessEvents
+| where process_commandline has "BlackEnergy"
+| summarize first_run = min(timestamp), hosts = dcount(hostname), host_list = make_set(hostname)
+
+ProcessEvents
+| where process_commandline has "BlackEnergy"
+| order by timestamp asc
+| take 1
+| project timestamp, hostname, parent_process_name, process_commandline
+// -> parent Explorer.exe: a user opened something
+// -> BlackEnergy.exe --beacon-interval 10 --c2 chicagogridupdates.com --scan 192.168.1.0/24
+
+// What did the user download just before?  -> Urgent_Cyber_Threat_Alert.zip at 08:28:01
+OutboundNetworkEvents
+| where src_ip == "10.10.0.8"
+| where timestamp between (datetime(2024-08-29 08:00:00) .. datetime(2024-08-29 08:30:00))
+| project timestamp, url
+
+// Files created right after the download (BlackEnergy.exe and its hash)
+FileCreationEvents
+| where hostname == "BDC0-DESKTOP"
+| where timestamp >= datetime(2024-08-29T08:28:01Z)
+| take 2
+| project timestamp, filename, path, sha256
+
+// The user opening the archive
+ProcessEvents
+| where hostname == "BDC0-DESKTOP"
+| where process_commandline has "Urgent_Cyber_Threat_Alert.zip"
+| project timestamp, process_commandline

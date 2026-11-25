@@ -1,0 +1,35 @@
+// Detection rules derived from this investigation
+
+// 1. PsExec launched in a loop / against many targets (lateral movement)
+ProcessEvents
+| where process_commandline has "psexec"
+| summarize targets = dcount(process_commandline), hosts = make_set(hostname) by bin(timestamp, 1h)
+| where targets >= 3
+
+// 2. Known destructive or ICS-attack tooling, whatever the path
+ProcessEvents
+| where process_commandline has_any ("KillDisk", "BlackEnergy", "--wipe", "ICSScanner")
+
+// 3. Network scans of OT ranges from a workstation
+ProcessEvents
+| where process_commandline has_any ("--scan", "nmap", "-sn") and process_commandline has_any ("192.168.", "SCADA")
+
+// 4. Event-log clearing (should almost never happen legitimately)
+ProcessEvents
+| where process_commandline has "wevtutil" and process_commandline has_any (" cl ", "clear-log")
+
+// 5. Credential files created or searched for
+FileCreationEvents
+| where filename has_any ("password", "passwd", "credential")
+
+// 6. Internal accounts sending "urgent" lures with archive links (internal spearphishing)
+let internal = Employees | project email_addr;
+Email
+| where sender in (internal)
+| where subject has_any ("Critical", "Urgent")
+| where link endswith ".zip" or link endswith ".exe"
+
+// 7. Logins from IPs seen in actor infrastructure (watchlist-fed)
+let actor_ips = dynamic(["87.250.252.242", "104.244.42.129"]);
+AuthenticationEvents
+| where src_ip in (actor_ips)

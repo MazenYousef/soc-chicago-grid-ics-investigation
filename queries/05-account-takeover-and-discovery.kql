@@ -1,0 +1,39 @@
+// Phase 5 - First compromised accounts, discovery and credential theft
+
+// Logins from actor IPs  -> first: 2024-08-27 02:40:47 HAQX-DESKTOP (elnunmaker), then PADH-LAPTOP (joeisenman)
+AuthenticationEvents
+| where src_ip in ("104.244.42.129", "87.250.252.242")
+| project timestamp, src_ip, hostname, username, result
+| order by timestamp asc
+
+// Which actor IP logged into the most accounts?
+AuthenticationEvents
+| where src_ip in ("104.244.42.129", "87.250.252.242")
+| summarize accounts = dcount(username) by src_ip
+
+// Activity on the first compromised host after the login
+ProcessEvents
+| where timestamp >= datetime(2024-08-27 02:40:47)
+| where hostname == "HAQX-DESKTOP"
+| project timestamp, process_commandline
+| order by timestamp asc
+// -> 2024-08-29 04:20:47  nltest /dclist:chicagogrid.local
+
+// Credential theft: results of the password-file search
+FileCreationEvents
+| where filename contains "password"
+| project timestamp, hostname, path, filename
+// -> 2024-09-10 02:18:06  C:\ProgramData\Password_Files.txt on BDC0-DESKTOP
+
+// What happened on BDC0-DESKTOP after the malicious-commands download?
+ProcessEvents
+| where hostname == "BDC0-DESKTOP"
+| where timestamp >= datetime(2024-09-10 04:41:57)
+| project timestamp, process_commandline
+| order by timestamp asc
+// -> 2024-09-10 05:32:57  wevtutil cl System
+
+// Anti-forensics: event-log clearing
+ProcessEvents
+| where process_commandline has "wevtutil" and process_commandline has " cl "
+| project timestamp, hostname, process_commandline
