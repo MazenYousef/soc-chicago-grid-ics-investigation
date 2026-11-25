@@ -8,7 +8,7 @@ Investigation of a cyberattack that caused a city-wide **power outage** by compr
 
 The tooling (**BlackEnergy + KillDisk**) and target match **Sandworm (APT44 / Seashell Blizzard)**, the Russian military group behind the 2015 Ukraine power grid attack.
 
-> **Platform:** KC7 Cyber, module *Critical Compromise in Chicago - ICS* · **Status:** completed, 32/32 questions, 2,870 points
+> **Platform:** KC7 Cyber, module *Critical Compromise in Chicago - ICS* · 
 > **Tools:** Azure Data Explorer (Kusto) · KQL · MITRE ATT&CK for Enterprise and ICS
 
 ---
@@ -237,6 +237,6 @@ AuthenticationEvents
 
 ---
 
-*Scenario, data and story by [KC7 Cyber](https://kc7cyber.com). Investigation notes, queries and write-up by Mazen Yousef.*
+*Scenario, data and story by [KC7 Cyber](https://kc7cyber.com).*
 
 *Author: Mazen Yousef | [LinkedIn](https://linkedin.com/in/mazenyousef) | [TryHackMe](https://tryhackme.com/p/mazen.yousef)*
